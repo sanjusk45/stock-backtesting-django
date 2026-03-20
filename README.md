@@ -1,23 +1,26 @@
 
-# YRS Innovations — Supertrend Strategy Backtester (Django)
+# 📈 Stock Market Strategy Backtesting Web Application
 
-## Setup & Run
+## 🚀 Overview
+This is a Django-based web application for stock market analysis and strategy backtesting using the Supertrend indicator. It allows users to analyze historical data, generate buy/sell signals, and evaluate trading performance.
+
+---
+
+## 🛠️ Tech Stack
+- Python
+- Django
+- Pandas, NumPy
+- yFinance API
+- Matplotlib
+- HTML, CSS, Bootstrap
+
+---
+
+## ⚙️ Setup & Run
 
 ```bash
 pip install -r requirements.txt
 python manage.py runserver
-```
-
-Then open: http://127.0.0.1:8000/
-
-## URL Routes
-
-| URL              | Description                          |
-|------------------|--------------------------------------|
-| `/`              | Landing page with instrument cards   |
-| `/run/`          | POST — run full backtest             |
-| `/live/?stock=X` | GET — live quote JSON (AJAX)         |
-| `/download/?stock=X&side=long` | Download trades CSV   |
 
 ## Project Structure
 
@@ -40,7 +43,7 @@ nifty_django/
         ├── index.html       ← landing page
         └── results.html     ← 5-tab results page
 ```
-=======
+
 # stock-backtesting-django
 Django-based web application for stock market analysis and strategy backtesting using Supertrend indicator, Pandas, and yFinance API with data visualization..
 
