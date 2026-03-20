@@ -1,3 +1,4 @@
+
 # YRS Innovations — Supertrend Strategy Backtester (Django)
 
 ## Setup & Run
@@ -39,3 +40,7 @@ nifty_django/
         ├── index.html       ← landing page
         └── results.html     ← 5-tab results page
 ```
+=======
+# stock-backtesting-django
+Django-based web application for stock market analysis and strategy backtesting using Supertrend indicator, Pandas, and yFinance API with data visualization..
+
