@@ -3,9 +3,7 @@
 
 ## 🚀 Overview
 This is a Django-based web application for stock market analysis and strategy backtesting using the Supertrend indicator. It allows users to analyze historical data, generate buy/sell signals, and evaluate trading performance.
-
 ---
-
 ## 🛠️ Tech Stack
 - Python
 - Django
@@ -45,5 +43,6 @@ nifty_django/
 ```
 
 # stock-backtesting-django
-Django-based web application for stock market analysis and strategy backtesting using Supertrend indicator, Pandas, and yFinance API with data visualization..
+Django-based web application for stock market analysis and strategy backtesting using Supertrend indicator,
+ Pandas, and yFinance API with data visualization..
 
