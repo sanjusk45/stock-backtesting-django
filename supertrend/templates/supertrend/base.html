@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Supertrend Backtester{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Inter',sans-serif;background:linear-gradient(135deg,#0a0a14,#0f0f1e,#0a0f1e);color:#e0e0f0;min-height:100vh}
+.topnav{display:flex;align-items:center;background:#0d0d1f;border-bottom:1px solid #1e1e3a;padding:0 24px;height:48px;position:sticky;top:0;z-index:100}
+.topnav .brand{font-family:'Space Mono',monospace;color:#7eb8f7;font-size:0.88rem;font-weight:700;margin-right:32px}
+.nav-link{color:#6080a0;font-size:0.82rem;padding:0 16px;height:48px;display:flex;align-items:center;text-decoration:none;border-bottom:2px solid transparent;transition:all 0.2s;background:none;border-left:none;border-right:none;border-top:none;font-family:'Inter',sans-serif;cursor:pointer}
+.nav-link:hover{color:#a0c0e0}.nav-link.active{color:#7eb8f7;border-bottom-color:#7eb8f7}
+.page-wrap{display:flex;min-height:calc(100vh - 48px)}
+.sidebar{width:260px;min-height:100%;background:linear-gradient(180deg,#0d0d1f,#111128);border-right:1px solid #1e1e3a;padding:20px 16px;flex-shrink:0}
+.content{flex:1;padding:24px 28px;overflow-x:auto}
+.sidebar h2{font-family:'Space Mono',monospace;color:#7eb8f7;font-size:0.88rem;margin-bottom:14px}
+.sidebar label{color:#8090b0;font-size:0.78rem;display:block;margin-bottom:5px;margin-top:10px}
+.sidebar select{width:100%;background:#0f0f22;color:#c0d8f8;border:1px solid #2a3a5a;border-radius:6px;padding:7px 10px;font-size:0.82rem;outline:none;cursor:pointer}
+.sidebar select:focus{border-color:#4a7acc}
+.info-block{background:#0d1322;border:1px solid #1e2a4a;border-radius:6px;padding:10px 12px;font-size:0.76rem;color:#5060a0;line-height:1.8;margin-top:10px}
+.info-block b{color:#6070c0}
+.sidebar hr{border:none;border-top:1px solid #1e1e3a;margin:12px 0}
+.btn-primary{display:block;width:100%;background:linear-gradient(90deg,#1a4080,#1a2a6a);color:#c0d8f8;border:1px solid #2a4a8a;border-radius:8px;font-family:'Space Mono',monospace;font-size:0.82rem;padding:10px 0;cursor:pointer;transition:all 0.2s;text-align:center;margin-top:12px}
+.btn-primary:hover{background:linear-gradient(90deg,#2050a0,#1a3a80);color:#fff;border-color:#4a7acc}
+.btn-secondary{display:block;width:100%;background:#0a1c10;color:#2ecc71;border:1px solid #1a5030;border-radius:6px;font-size:0.78rem;padding:8px 0;cursor:pointer;transition:all 0.2s;text-align:center;margin-top:6px}
+.btn-secondary:hover{background:#0d2815;border-color:#2ecc71}
+.btn-compare{display:block;width:100%;background:#1a0a2a;color:#9b59b6;border:1px solid #4a1a7a;border-radius:6px;font-size:0.78rem;padding:8px 0;cursor:pointer;transition:all 0.2s;text-align:center;margin-top:6px;text-decoration:none;font-family:'Inter',sans-serif}
+.btn-compare:hover{background:#230d35;border-color:#9b59b6}
+.main-header{background:linear-gradient(90deg,#1a1a3e,#0d1a3a);border:1px solid #2a2a5a;border-radius:12px;padding:18px 24px;margin-bottom:20px}
+.main-header h1{font-family:'Space Mono',monospace;color:#7eb8f7;font-size:1.4rem;margin-bottom:4px}
+.main-header p{color:#6080a0;font-size:0.83rem}
+.metrics-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.metric-card{flex:1;min-width:120px;background:linear-gradient(135deg,#141428,#1a1a35);border:1px solid #252550;border-radius:10px;padding:12px 14px;text-align:center}
+.metric-label{font-size:0.67rem;color:#6070a0;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.metric-value{font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700}
+.metric-green{color:#2ecc71}.metric-red{color:#e74c3c}.metric-yellow{color:#f1c40f}.metric-blue{color:#7eb8f7}.metric-purple{color:#9b59b6}
+.tabs{display:flex;border-bottom:1px solid #1e2e4a;margin-bottom:16px;gap:2px;flex-wrap:wrap}
+.tab-btn{font-family:'Space Mono',monospace;color:#6080a0;background:transparent;border:none;border-bottom:2px solid transparent;padding:9px 14px;font-size:0.78rem;cursor:pointer;transition:color 0.2s}
+.tab-btn:hover{color:#a0b8d8}.tab-btn.active{color:#7eb8f7;border-bottom-color:#7eb8f7}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.section-title{font-family:'Space Mono',monospace;color:#7eb8f7;font-size:0.9rem;border-bottom:1px solid #1e2e4a;padding-bottom:7px;margin:16px 0 12px 0}
+.info-box{background:#0d1a2a;border-left:3px solid #7eb8f7;border-radius:6px;padding:10px 14px;margin:8px 0;font-size:0.82rem;color:#90a8c8;line-height:1.7}
+.ha-rule-banner{background:linear-gradient(90deg,#1a1a08,#141408);border:1px solid #3a3a10;border-left:4px solid #f1c40f;border-radius:8px;padding:12px 18px;margin:10px 0 16px 0}
+.ha-title{color:#f1c40f;font-weight:700;font-family:'Space Mono',monospace;font-size:0.82rem;margin-bottom:8px}
+.ha-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.ha-col{background:#0a0a08;border-radius:6px;padding:8px 12px;border:1px solid #2a2a10}
+.ha-col-title-green{color:#2ecc71;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.ha-col-title-red{color:#e74c3c;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.ha-col-body{color:#a0b070;font-size:0.78rem;line-height:1.7}
+.data-table{width:100%;border-collapse:collapse;font-size:0.8rem}
+.data-table th{background:#141428;color:#7eb8f7;padding:7px 10px;text-align:left;border-bottom:1px solid #1e2e4a}
+.data-table td{padding:6px 10px;border-bottom:1px solid #111128;color:#c0cce0}
+.data-table tr:hover td{background:#0f0f22}
+.pnl-pos{color:#2ecc71;font-weight:700}.pnl-neg{color:#e74c3c;font-weight:700}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.summary-table{width:100%;border-collapse:collapse;font-size:0.83rem}
+.summary-table th{background:#141428;color:#7eb8f7;padding:9px 14px;text-align:left;border-bottom:1px solid #1e2e4a}
+.summary-table td{padding:9px 14px;border-bottom:1px solid #111128;color:#c0cce0}
+.instrument-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+.instrument-card{background:linear-gradient(135deg,#141428,#1a1a35);border:1px solid #252550;border-radius:10px;padding:18px;cursor:pointer;transition:border-color 0.2s}
+.instrument-card:hover{border-color:#4a6acc}
+.card-ticker{font-family:'Space Mono',monospace;color:#7eb8f7;font-size:0.82rem;margin-bottom:5px}
+.card-title{color:#d0d8f0;font-weight:600;margin-bottom:4px;font-size:0.87rem}
+.card-desc{color:#506080;font-size:0.76rem}
+.chart-img{width:100%;border-radius:8px}
+.donut-row{display:flex;gap:20px;align-items:center;margin:10px 0}
+.donut-wrap{position:relative;width:90px;height:90px;flex-shrink:0}
+.donut-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Space Mono',monospace;font-size:0.72rem;color:#c0d0f0;text-align:center;line-height:1.3;pointer-events:none}
+.donut-stats{font-size:0.78rem;color:#8090b0;line-height:2}
+.donut-stats span{font-family:'Space Mono',monospace}
+.win-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2ecc71;margin-right:5px}
+.loss-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e74c3c;margin-right:5px}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.compare-card{background:linear-gradient(135deg,#141428,#1a1a35);border:1px solid #252550;border-radius:10px;padding:16px}
+.compare-card h3{font-family:'Space Mono',monospace;color:#7eb8f7;font-size:0.88rem;margin-bottom:12px}
+#loader{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,10,20,0.88);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+#loader.show{display:flex}
+.loader-text{font-family:'Space Mono',monospace;color:#7eb8f7;font-size:0.95rem}
+.spinner{width:42px;height:42px;border:3px solid #1a2a5a;border-top-color:#7eb8f7;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+footer{text-align:center;color:#303050;font-size:0.72rem;padding:12px 0 8px;margin-top:28px;border-top:1px solid #111128}
+input[type=range]{accent-color:#7eb8f7}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+<div id="loader"><div class="spinner"></div><div class="loader-text" id="loader-msg">Running backtest…</div></div>
+<nav class="topnav">
+  <span class="brand">📈 Supertrend</span>
+  <a class="nav-link {% block nav_home %}active{% endblock %}" href="/">Home</a>
+  <a class="nav-link {% block nav_compare %}{% endblock %}" href="/compare/">⚖️ Compare</a>
+</nav>
+<div class="page-wrap">
+  <aside class="sidebar">
+    <h2>⚙️ Settings</h2>
+    <hr>
+    <form id="backtest-form" method="POST" action="{% url 'run' %}" onsubmit="showLoader('Running backtest…')">
+      {% csrf_token %}
+      <label for="stock-select">📌 Select Instrument</label>
+      <select name="stock" id="stock-select">
+        {% for sym in symbols %}
+          <option value="{{ sym }}" {% if sym == selected_stock %}selected{% endif %}>{{ sym }}</option>
+        {% endfor %}
+      </select>
+      <hr>
+      <label for="years-slider">📅 Lookback: <span id="slider-val">{{ years_back|default:3 }}</span> Year(s)</label>
+      <input type="range" id="years-slider" name="years_back" min="1" max="5" value="{{ years_back|default:3 }}" oninput="updateSlider(this.value)" style="width:100%;margin-top:6px">
+      <div id="date-range-display" style="font-size:0.72rem;color:#506080;margin-top:4px;margin-bottom:2px"></div>
+      <div class="info-block"><b>📐 Supertrend Parameters</b><br>ATR Period: <b>7</b> &nbsp;|&nbsp; Multiplier: <b>3</b></div>
+      <button type="submit" class="btn-primary">▶ Run Backtest</button>
+    </form>
+    <button class="btn-secondary" onclick="fetchLive()">🔄 Refresh Live Data</button>
+    <a class="btn-compare" href="/compare/">⚖️ Compare Two Stocks</a>
+    <hr>
+    <div class="info-block">
+      <b style="color:#5060a0">Strategy Rules</b><br>
+      • Signal → <b>Heikin Ashi</b><br>
+      • Price → original <b>OHLC</b><br>
+      • Long: Red→Green<br>
+      • Short: Green→Red
+    </div>
+  </aside>
+  <main class="content">
+    <div class="main-header">
+      <h1>📈 Supertrend Strategy Backtester</h1>
+      <p>Heikin Ashi + Supertrend (ATR=7, Mult=3) · NSE Instruments · Up to 5-Year Backtest</p>
+    </div>
+    <div id="live-panel" style="margin-bottom:14px"></div>
+    {% block main %}{% endblock %}
+    <footer>Supertrend Backtester · Heikin Ashi + Supertrend · NSE Instruments</footer>
+  </main>
+</div>
+<script>
+function showLoader(msg){document.getElementById('loader-msg').textContent=msg||'Loading…';document.getElementById('loader').classList.add('show')}
+function updateSlider(val){
+  document.getElementById('slider-val').textContent=val;
+  const end=new Date(),start=new Date();
+  start.setFullYear(end.getFullYear()-parseInt(val));start.setDate(start.getDate()-60);
+  const fmt=d=>d.toISOString().slice(0,10);
+  document.getElementById('date-range-display').textContent=fmt(start)+' → '+fmt(end);
+}
+function mc(label,value,cls){return `<div class="metric-card"><div class="metric-label">${label}</div><div class="metric-value ${cls}">${value}</div></div>`}
+function fetchLive(){
+  const stock=document.getElementById('stock-select').value;
+  const panel=document.getElementById('live-panel');
+  panel.innerHTML='<div class="info-box">⏳ Fetching live data…</div>';
+  fetch(`/live/?stock=${stock}`).then(r=>r.json()).then(d=>{
+    if(d.status!=='ok'){panel.innerHTML=`<div class="info-box" style="border-left-color:#e74c3c">⚠️ ${d.msg||'Unavailable'}</div>`;return}
+    const sign=d.change>=0?'+':'';const cls=d.change>=0?'metric-green':'metric-red';
+    panel.innerHTML=`<div class="section-title">⚡ Live Market Data — ${stock}</div>
+    <div class="metrics-row">
+      ${mc('Live Price (₹)','₹'+d.last_price.toLocaleString('en-IN'),'metric-yellow')}
+      ${mc('Change',sign+d.change.toFixed(2)+' ('+sign+d.change_pct.toFixed(2)+'%)',cls)}
+      ${mc('Day High','₹'+d.day_high.toLocaleString('en-IN'),'metric-blue')}
+      ${mc('Day Low','₹'+d.day_low.toLocaleString('en-IN'),'metric-blue')}
+      ${mc('Prev Close','₹'+d.prev_close.toLocaleString('en-IN'),'metric-blue')}
+    </div>
+    <div class="info-box" style="border-left-color:${d.color}">⏱ <b style="color:#7eb8f7">${d.last_update||'N/A'}</b> &nbsp;|&nbsp; <b style="color:${d.color}">${d.direction}</b></div>`;
+  }).catch(()=>{panel.innerHTML='<div class="info-box" style="border-left-color:#e74c3c">⚠️ Network error</div>'});
+}
+function switchTab(id){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-btn-'+id).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+function drawDonut(canvasId,wins,losses){
+  const canvas=document.getElementById(canvasId);if(!canvas)return;
+  const ctx=canvas.getContext('2d');const total=wins+losses;if(total===0)return;
+  const cx=45,cy=45,r=34,sw=11;ctx.clearRect(0,0,90,90);
+  const draw=(s,e,c)=>{ctx.beginPath();ctx.arc(cx,cy,r,s,e);ctx.strokeStyle=c;ctx.lineWidth=sw;ctx.lineCap='butt';ctx.stroke()};
+  const winAngle=(wins/total)*2*Math.PI;
+  draw(-Math.PI/2,-Math.PI/2+winAngle,'#2ecc71');
+  if(losses>0)draw(-Math.PI/2+winAngle,-Math.PI/2+2*Math.PI,'#e74c3c');
+}
+window.addEventListener('DOMContentLoaded',()=>{
+  const s=document.getElementById('years-slider');if(s)updateSlider(s.value);
+  document.querySelectorAll('[data-canvas]').forEach(el=>drawDonut(el.dataset.canvas,+el.dataset.wins,+el.dataset.losses));
+});
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

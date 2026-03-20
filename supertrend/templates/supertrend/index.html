@@ -1,0 +1,16 @@
+{% extends "supertrend/base.html" %}
+{% block main %}
+<div class="info-box">
+  👈 Select an instrument from the sidebar and click <b>▶ Run Backtest</b>, or click any card below to quick-select.
+</div>
+<div class="section-title">📌 Available Instruments (NSE)</div>
+<div class="instrument-cards">
+  {% for card in symbols_info %}
+  <div class="instrument-card" onclick="document.getElementById('stock-select').value='{{ card.name }}';document.getElementById('stock-select').focus()">
+    <div class="card-ticker">{{ card.ticker }}</div>
+    <div class="card-title">{{ card.title }}</div>
+    <div class="card-desc">{{ card.desc }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

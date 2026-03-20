@@ -1,0 +1,202 @@
+{% extends "supertrend/base.html" %}
+{% load dict_extras %}
+{% block title %}{{ stock }} Backtest — Supertrend{% endblock %}
+
+{% block main %}
+<!-- Live Data -->
+<div class="section-title">⚡ Live / Acute Market Data</div>
+{% if live.status == 'ok' %}
+<div class="metrics-row">
+  <div class="metric-card"><div class="metric-label">Live Price (₹)</div><div class="metric-value metric-yellow">₹{{ live.last_price|floatformat:2 }}</div></div>
+  <div class="metric-card"><div class="metric-label">Change</div>
+    <div class="metric-value {% if live.change >= 0 %}metric-green{% else %}metric-red{% endif %}">
+      {% if live.change >= 0 %}+{% endif %}{{ live.change|floatformat:2 }} ({% if live.change_pct >= 0 %}+{% endif %}{{ live.change_pct|floatformat:2 }}%)
+    </div></div>
+  <div class="metric-card"><div class="metric-label">Day High</div><div class="metric-value metric-blue">₹{{ live.day_high|floatformat:2 }}</div></div>
+  <div class="metric-card"><div class="metric-label">Day Low</div><div class="metric-value metric-blue">₹{{ live.day_low|floatformat:2 }}</div></div>
+  <div class="metric-card"><div class="metric-label">Prev Close</div><div class="metric-value metric-blue">₹{{ live.prev_close|floatformat:2 }}</div></div>
+  <div class="metric-card"><div class="metric-label">Supertrend Signal</div>
+    <div class="metric-value" style="color:{{ signal_color }}">
+      {% if signal_color == '#2ecc71' %}🟢{% else %}🔴{% endif %} {{ live_signal }}
+    </div></div>
+</div>
+<div class="info-box" style="border-left-color:{{ signal_color }}">
+  ⏱ <b style="color:#7eb8f7">{{ live.last_update|default:"N/A" }}</b>
+  &nbsp;|&nbsp; <b style="color:{{ live.color }}">{{ live.direction }}</b>
+  &nbsp;|&nbsp; <b style="color:{{ signal_color }}">{{ live_signal }}</b>
+</div>
+{% else %}
+<div class="info-box" style="border-left-color:#e74c3c">⚠️ Live data unavailable. Backtested data shown below.</div>
+{% endif %}
+
+<br>
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+  <div>
+    <h3 style="color:#c0d0e8;font-size:1.05rem">📊 Results — {{ stock }}</h3>
+    <p style="color:#506080;font-size:0.8rem;margin-top:3px">{{ start_str }} → {{ end_str }} &nbsp;|&nbsp; {{ total_days }} trading days &nbsp;|&nbsp; {{ years_back }} year(s)</p>
+  </div>
+  <a href="/compare/" style="font-size:0.78rem;color:#9b59b6;text-decoration:none;border:1px solid #4a1a7a;padding:5px 12px;border-radius:5px">⚖️ Compare with another stock</a>
+</div>
+
+<div class="ha-rule-banner" style="margin-top:12px">
+  <div class="ha-title">⚠️ CANDLESTICK RULE — Heikin Ashi Strategy</div>
+  <div class="ha-grid">
+    <div class="ha-col"><div class="ha-col-title-green">✅ Signal Source — Heikin Ashi</div>
+      <div class="ha-col-body">• Supertrend on HA (Open, High, Low, Close)<br>• Long Entry: HA Red → Green<br>• Short Entry: HA Green → Red</div></div>
+    <div class="ha-col"><div class="ha-col-title-red">📌 Price Source — Original OHLC</div>
+      <div class="ha-col-body">• Entry & Exit = OHLC Close on signal bar<br>• PnL = Exit − Entry (Long) / Entry − Exit (Short)<br>• Realistic execution prices</div></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" id="tab-btn-chart"   onclick="switchTab('chart')">📈 Chart</button>
+  <button class="tab-btn"        id="tab-btn-ha"      onclick="switchTab('ha')">🕯️ HA vs OHLC</button>
+  <button class="tab-btn"        id="tab-btn-long"    onclick="switchTab('long')">🟢 Long Trades</button>
+  <button class="tab-btn"        id="tab-btn-short"   onclick="switchTab('short')">🔴 Short Trades</button>
+  <button class="tab-btn"        id="tab-btn-summary" onclick="switchTab('summary')">📋 Summary</button>
+</div>
+
+<!-- TAB 1: CHART -->
+<div class="tab-panel active" id="tab-chart">
+  <img class="chart-img" src="data:image/png;base64,{{ chart_b64 }}" alt="Supertrend Chart">
+  <br><br>
+  <a class="btn-secondary" style="display:inline-block;width:auto;padding:7px 18px"
+     href="data:image/png;base64,{{ chart_b64 }}" download="{{ stock }}_supertrend_chart.png">⬇ Download Chart (PNG)</a>
+</div>
+
+<!-- TAB 2: HA vs OHLC -->
+<div class="tab-panel" id="tab-ha">
+  <div class="section-title">🕯️ Heikin Ashi vs Original OHLC</div>
+  <img class="chart-img" src="data:image/png;base64,{{ ha_chart_b64 }}" alt="HA vs OHLC">
+  <br><br>
+  <a class="btn-secondary" style="display:inline-block;width:auto;padding:7px 18px"
+     href="data:image/png;base64,{{ ha_chart_b64 }}" download="{{ stock }}_ha_vs_ohlc.png">⬇ Download HA vs OHLC (PNG)</a>
+  <div class="section-title" style="margin-top:20px">Last 20 Bars</div>
+  <div class="two-col">
+    <div>
+      <p style="color:#2ecc71;font-size:0.76rem;margin-bottom:7px">🟢 Heikin Ashi (Signal Source)</p>
+      <table class="data-table">
+        <thead><tr><th>Date</th><th>HA Open</th><th>HA High</th><th>HA Low</th><th>HA Close</th></tr></thead>
+        <tbody>{% for row in ha_table %}<tr><td>{{ row.index }}</td><td>{{ row.HA_Open }}</td><td>{{ row.HA_High }}</td><td>{{ row.HA_Low }}</td><td>{{ row.HA_Close }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    <div>
+      <p style="color:#c0cce0;font-size:0.76rem;margin-bottom:7px">📌 Original OHLC (Price Source)</p>
+      <table class="data-table">
+        <thead><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th></tr></thead>
+        <tbody>{% for row in ohlc_table %}<tr><td>{{ row.index }}</td><td>{{ row.Open }}</td><td>{{ row.High }}</td><td>{{ row.Low }}</td><td>{{ row.Close }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: LONG TRADES -->
+<div class="tab-panel" id="tab-long">
+  <div class="section-title">🟢 LONG TRADES</div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="metric-label">Total Trades</div><div class="metric-value metric-blue">{{ lm.total }}</div></div>
+    <div class="metric-card"><div class="metric-label">Total PnL (₹)</div><div class="metric-value {% if lm.pnl >= 0 %}metric-green{% else %}metric-red{% endif %}">₹{{ lm.pnl|floatformat:2 }}</div></div>
+    <div class="metric-card"><div class="metric-label">Win Rate</div><div class="metric-value metric-green">{{ lm.win_rate }}</div></div>
+    <div class="metric-card"><div class="metric-label">Max Drawdown</div><div class="metric-value metric-yellow">₹{{ lm.max_dd|floatformat:2 }}</div></div>
+    <div class="metric-card"><div class="metric-label">Avg PnL/Trade</div><div class="metric-value {% if lm.avg_pnl >= 0 %}metric-green{% else %}metric-red{% endif %}">₹{{ lm.avg_pnl|floatformat:2 }}</div></div>
+  </div>
+  <!-- Win/Loss Donut -->
+  <div class="donut-row" data-canvas="donut-long" data-wins="{{ lm.wins }}" data-losses="{{ lm.losses }}">
+    <div class="donut-wrap">
+      <canvas id="donut-long" width="90" height="90"></canvas>
+      <div class="donut-label">{{ lm.win_rate }}</div>
+    </div>
+    <div class="donut-stats">
+      <span class="win-dot"></span>Wins: <span>{{ lm.wins }}</span><br>
+      <span class="loss-dot"></span>Losses: <span>{{ lm.losses }}</span><br>
+      Total: <span>{{ lm.total }}</span> trades
+    </div>
+  </div>
+  {% if long_trades %}
+  <div class="section-title">Long Trade Log</div>
+  <div style="overflow-x:auto">
+  <table class="data-table">
+    <thead><tr><th>#</th><th>Entry Date</th><th>Entry Price</th><th>Exit Date</th><th>Exit Price</th><th>PnL (₹)</th><th>Result</th></tr></thead>
+    <tbody>
+      {% for t in long_trades %}
+      <tr>
+        <td style="color:#506080">{{ forloop.counter }}</td>
+        <td>{{ t.entry_date }}</td><td>₹{{ t.entry_price|floatformat:2 }}</td>
+        <td>{{ t.exit_date }}</td><td>₹{{ t.exit_price|floatformat:2 }}</td>
+        <td class="{% if t.pnl >= 0 %}pnl-pos{% else %}pnl-neg{% endif %}">₹{{ t.pnl|floatformat:2 }}</td>
+        <td>{% if t.pnl >= 0 %}<span style="color:#2ecc71">✅ Win</span>{% else %}<span style="color:#e74c3c">❌ Loss</span>{% endif %}</td>
+      </tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <br><a class="btn-secondary" style="display:inline-block;width:auto;padding:7px 18px" href="/download/?stock={{ stock }}&side=long">⬇ Download Long Trades CSV</a>
+  {% else %}<div class="info-box">No long trades in this period.</div>{% endif %}
+</div>
+
+<!-- TAB 4: SHORT TRADES -->
+<div class="tab-panel" id="tab-short">
+  <div class="section-title">🔴 SHORT TRADES</div>
+  <div class="metrics-row">
+    <div class="metric-card"><div class="metric-label">Total Trades</div><div class="metric-value metric-blue">{{ sm.total }}</div></div>
+    <div class="metric-card"><div class="metric-label">Total PnL (₹)</div><div class="metric-value {% if sm.pnl >= 0 %}metric-green{% else %}metric-red{% endif %}">₹{{ sm.pnl|floatformat:2 }}</div></div>
+    <div class="metric-card"><div class="metric-label">Win Rate</div><div class="metric-value metric-green">{{ sm.win_rate }}</div></div>
+    <div class="metric-card"><div class="metric-label">Max Drawdown</div><div class="metric-value metric-yellow">₹{{ sm.max_dd|floatformat:2 }}</div></div>
+    <div class="metric-card"><div class="metric-label">Avg PnL/Trade</div><div class="metric-value {% if sm.avg_pnl >= 0 %}metric-green{% else %}metric-red{% endif %}">₹{{ sm.avg_pnl|floatformat:2 }}</div></div>
+  </div>
+  <div class="donut-row" data-canvas="donut-short" data-wins="{{ sm.wins }}" data-losses="{{ sm.losses }}">
+    <div class="donut-wrap">
+      <canvas id="donut-short" width="90" height="90"></canvas>
+      <div class="donut-label">{{ sm.win_rate }}</div>
+    </div>
+    <div class="donut-stats">
+      <span class="win-dot"></span>Wins: <span>{{ sm.wins }}</span><br>
+      <span class="loss-dot"></span>Losses: <span>{{ sm.losses }}</span><br>
+      Total: <span>{{ sm.total }}</span> trades
+    </div>
+  </div>
+  {% if short_trades %}
+  <div class="section-title">Short Trade Log</div>
+  <div style="overflow-x:auto">
+  <table class="data-table">
+    <thead><tr><th>#</th><th>Entry Date</th><th>Entry Price</th><th>Exit Date</th><th>Exit Price</th><th>PnL (₹)</th><th>Result</th></tr></thead>
+    <tbody>
+      {% for t in short_trades %}
+      <tr>
+        <td style="color:#506080">{{ forloop.counter }}</td>
+        <td>{{ t.entry_date }}</td><td>₹{{ t.entry_price|floatformat:2 }}</td>
+        <td>{{ t.exit_date }}</td><td>₹{{ t.exit_price|floatformat:2 }}</td>
+        <td class="{% if t.pnl >= 0 %}pnl-pos{% else %}pnl-neg{% endif %}">₹{{ t.pnl|floatformat:2 }}</td>
+        <td>{% if t.pnl >= 0 %}<span style="color:#2ecc71">✅ Win</span>{% else %}<span style="color:#e74c3c">❌ Loss</span>{% endif %}</td>
+      </tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <br><a class="btn-secondary" style="display:inline-block;width:auto;padding:7px 18px" href="/download/?stock={{ stock }}&side=short">⬇ Download Short Trades CSV</a>
+  {% else %}<div class="info-box">No short trades in this period.</div>{% endif %}
+</div>
+
+<!-- TAB 5: SUMMARY -->
+<div class="tab-panel" id="tab-summary">
+  <div class="section-title">📋 PERFORMANCE SUMMARY</div>
+  <table class="summary-table">
+    <thead><tr><th>Metric</th><th style="color:#2ecc71">Long Trades</th><th style="color:#e74c3c">Short Trades</th></tr></thead>
+    <tbody>
+      {% for row in summary %}
+      <tr><td style="color:#8090b0">{{ row.metric }}</td><td style="color:#2ecc71">{{ row.long }}</td><td style="color:#e74c3c">{{ row.short }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <hr style="border-color:#1e2e4a;margin:18px 0">
+  <div class="section-title">ℹ️ Strategy Notes</div>
+  <div class="info-box">
+    <b>Data Source:</b> Yahoo Finance via <code>yfinance</code> (NSE: .NS suffix)<br><br>
+    <b style="color:#f1c40f">⚠️ Candlestick Rule:</b><br>
+    &nbsp;&nbsp;• Signal Generation → Heikin Ashi candles<br>
+    &nbsp;&nbsp;• Entry/Exit Price → Original OHLC <b>Close</b><br><br>
+    <b>Supertrend:</b> ATR Period=7, Multiplier=3 (Wilder smoothing)<br>
+    <b>Long Entry:</b> HA Red→Green &nbsp;|&nbsp; <b>Short Entry:</b> HA Green→Red<br>
+    <b>Max Drawdown:</b> On cumulative PnL curve &nbsp;|&nbsp; <b>Open Positions:</b> Closed at last bar
+  </div>
+</div>
+{% endblock %}

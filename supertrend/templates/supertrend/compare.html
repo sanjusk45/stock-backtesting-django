@@ -1,0 +1,101 @@
+{% extends "supertrend/base.html" %}
+{% block title %}Compare Stocks — Supertrend{% endblock %}
+{% block nav_home %}{% endblock %}
+{% block nav_compare %}active{% endblock %}
+
+{% block main %}
+<div class="main-header" style="margin-bottom:16px">
+  <h1>⚖️ Stock Comparison</h1>
+  <p>Run Supertrend backtest on two stocks side by side</p>
+</div>
+
+{% if not ctx1 %}
+<!-- Compare form -->
+<div style="background:linear-gradient(135deg,#141428,#1a1a35);border:1px solid #252550;border-radius:12px;padding:24px;max-width:560px">
+  <form method="POST" action="/compare/" onsubmit="showLoader('Comparing stocks…')">
+    {% csrf_token %}
+    <div class="two-col" style="gap:16px;margin-bottom:16px">
+      <div>
+        <label style="color:#8090b0;font-size:0.78rem;display:block;margin-bottom:6px">📌 Stock 1</label>
+        <select name="stock1" style="width:100%;background:#0f0f22;color:#c0d8f8;border:1px solid #2a3a5a;border-radius:6px;padding:8px 10px;font-size:0.83rem;outline:none">
+          {% for sym in symbols %}<option value="{{ sym }}">{{ sym }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label style="color:#8090b0;font-size:0.78rem;display:block;margin-bottom:6px">📌 Stock 2</label>
+        <select name="stock2" style="width:100%;background:#0f0f22;color:#c0d8f8;border:1px solid #2a3a5a;border-radius:6px;padding:8px 10px;font-size:0.83rem;outline:none">
+          {% for sym in symbols %}<option value="{{ sym }}" {% if forloop.counter == 2 %}selected{% endif %}>{{ sym }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <label style="color:#8090b0;font-size:0.78rem;display:block;margin-bottom:6px">📅 Lookback: <span id="cmp-slider-val">3</span> Year(s)</label>
+    <input type="range" name="years_back" min="1" max="5" value="3" oninput="document.getElementById('cmp-slider-val').textContent=this.value" style="width:100%;accent-color:#7eb8f7;margin-bottom:16px">
+    <button type="submit" class="btn-primary">⚖️ Compare Now</button>
+  </form>
+</div>
+
+{% else %}
+<!-- Results -->
+<p style="color:#506080;font-size:0.8rem;margin-bottom:16px">
+  {{ ctx1.start_str }} → {{ ctx1.end_str }} &nbsp;|&nbsp; {{ years_back }} year(s)
+</p>
+
+<!-- Summary cards -->
+<div class="compare-grid">
+  <div class="compare-card">
+    <h3>📊 {{ stock1 }}</h3>
+    <div class="metrics-row" style="flex-direction:column;gap:8px">
+      {% with lm=ctx1.lm sm=ctx1.sm %}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="metric-card" style="flex:1"><div class="metric-label">Long PnL</div><div class="metric-value {% if lm.pnl >= 0 %}metric-green{% else %}metric-red{% endif %}" style="font-size:0.95rem">₹{{ lm.pnl|floatformat:0 }}</div></div>
+        <div class="metric-card" style="flex:1"><div class="metric-label">Short PnL</div><div class="metric-value {% if sm.pnl >= 0 %}metric-green{% else %}metric-red{% endif %}" style="font-size:0.95rem">₹{{ sm.pnl|floatformat:0 }}</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="metric-card" style="flex:1"><div class="metric-label">Long Win Rate</div><div class="metric-value metric-blue" style="font-size:0.95rem">{{ lm.win_rate }}</div></div>
+        <div class="metric-card" style="flex:1"><div class="metric-label">Short Win Rate</div><div class="metric-value metric-blue" style="font-size:0.95rem">{{ sm.win_rate }}</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="metric-card" style="flex:1"><div class="metric-label">Long Trades</div><div class="metric-value metric-yellow" style="font-size:0.95rem">{{ lm.total }}</div></div>
+        <div class="metric-card" style="flex:1"><div class="metric-label">Short Trades</div><div class="metric-value metric-yellow" style="font-size:0.95rem">{{ sm.total }}</div></div>
+      </div>
+      {% endwith %}
+    </div>
+  </div>
+  <div class="compare-card">
+    <h3>📊 {{ stock2 }}</h3>
+    <div class="metrics-row" style="flex-direction:column;gap:8px">
+      {% with lm=ctx2.lm sm=ctx2.sm %}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="metric-card" style="flex:1"><div class="metric-label">Long PnL</div><div class="metric-value {% if lm.pnl >= 0 %}metric-green{% else %}metric-red{% endif %}" style="font-size:0.95rem">₹{{ lm.pnl|floatformat:0 }}</div></div>
+        <div class="metric-card" style="flex:1"><div class="metric-label">Short PnL</div><div class="metric-value {% if sm.pnl >= 0 %}metric-green{% else %}metric-red{% endif %}" style="font-size:0.95rem">₹{{ sm.pnl|floatformat:0 }}</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="metric-card" style="flex:1"><div class="metric-label">Long Win Rate</div><div class="metric-value metric-blue" style="font-size:0.95rem">{{ lm.win_rate }}</div></div>
+        <div class="metric-card" style="flex:1"><div class="metric-label">Short Win Rate</div><div class="metric-value metric-blue" style="font-size:0.95rem">{{ sm.win_rate }}</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="metric-card" style="flex:1"><div class="metric-label">Long Trades</div><div class="metric-value metric-yellow" style="font-size:0.95rem">{{ lm.total }}</div></div>
+        <div class="metric-card" style="flex:1"><div class="metric-label">Short Trades</div><div class="metric-value metric-yellow" style="font-size:0.95rem">{{ sm.total }}</div></div>
+      </div>
+      {% endwith %}
+    </div>
+  </div>
+</div>
+
+<br>
+<!-- Side-by-side charts -->
+<div class="compare-grid" style="margin-top:8px">
+  <div>
+    <div class="section-title">📈 {{ stock1 }} Chart</div>
+    <img class="chart-img" src="data:image/png;base64,{{ ctx1.chart_b64 }}" alt="{{ stock1 }} chart">
+  </div>
+  <div>
+    <div class="section-title">📈 {{ stock2 }} Chart</div>
+    <img class="chart-img" src="data:image/png;base64,{{ ctx2.chart_b64 }}" alt="{{ stock2 }} chart">
+  </div>
+</div>
+
+<br>
+<a href="/compare/" class="btn-secondary" style="display:inline-block;width:auto;padding:8px 20px">🔄 Compare Different Stocks</a>
+{% endif %}
+{% endblock %}
